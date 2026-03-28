@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Sparkles, Sun, Info, Crosshair, RefreshCcw, Layers, Layout, Brain, Search, Maximize2, Palette } from "lucide-react";
 import clsx from "clsx";
-import { analyzeImage } from "@/lib/gemini";
+import { analyzeImageStream } from "@/lib/gemini";
 
 interface Critique {
   x: number;
@@ -25,7 +25,6 @@ export default function Workspace() {
   const [image, setImage] = useState<string | null>(null);
   const [tab, setTab] = useState<"critique" | "relight" | "materials" | "layers">("critique");
   
-  const [critiques, setCritiques] = useState<Critique[]>([]);
   const [displayedCritiques, setDisplayedCritiques] = useState<Critique[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const [sunPos, setSunPos] = useState({ x: 0, y: 0 });
@@ -36,7 +35,6 @@ export default function Workspace() {
     const baseUrl = SKETCH_URLS[Math.floor(Math.random() * SKETCH_URLS.length)];
     const sig = Math.floor(Math.random() * 1000000);
     setImage(`${baseUrl}?auto=format&fit=crop&w=1200&q=80&sig=${sig}`);
-    setCritiques([]);
     setDisplayedCritiques([]);
     setStatus("idle");
   };
@@ -45,21 +43,17 @@ export default function Workspace() {
     if (!image) return;
     setStatus("loading");
     setDisplayedCritiques([]);
-    const result = await analyzeImage(image);
-    if (result && result.critiques) {
-      setCritiques(result.critiques);
-      // Stream points one by one
-      let current = 0;
-      const interval = setInterval(() => {
-        if (current < result.critiques.length) {
-          setDisplayedCritiques(prev => [...prev, result.critiques[current]]);
-          current++;
-        } else {
-          clearInterval(interval);
-          setStatus("done");
+    
+    try {
+      const stream = analyzeImageStream(image);
+      for await (const point of stream) {
+        if (point && typeof point === 'object' && 'title' in point) {
+          setDisplayedCritiques(prev => [...prev, point as Critique]);
         }
-      }, 400);
-    } else {
+      }
+    } catch (e) {
+      console.error("Streaming UI Error:", e);
+    } finally {
       setStatus("done");
     }
   };
@@ -90,7 +84,7 @@ export default function Workspace() {
         >
           <h2 className="text-5xl font-bold text-zinc-800 mb-2 tracking-tighter italic font-serif">Redline</h2>
           <p className="text-zinc-400 text-xl mb-12 max-w-xs text-center leading-relaxed font-serif italic">
-            Professional art direction for digital creators.
+            Art direction for the analog-digital hybrid.
           </p>
           <button 
             onClick={loadRandomImage}
@@ -231,14 +225,14 @@ export default function Workspace() {
                 <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-widest font-outfit">Art Director</h3>
                 <p className="text-zinc-500 font-serif text-xl leading-snug italic">"Identify the rhythm of the gesture before the weight of the shadow."</p>
               </div>
-              {status === "idle" && (
-                <button onClick={handleCritique} className="w-full py-5 bg-zinc-900 text-white font-bold rounded-xl shadow-xl transition-all active:opacity-80 text-lg font-outfit">Analyze Piece</button>
-              )}
-              {status === "loading" && (
-                <div className="py-12 flex flex-col items-center justify-center gap-6">
-                  <div className="w-10 h-10 border-2 border-zinc-200 border-t-red-700 rounded-full animate-spin" />
-                  <span className="text-xs text-zinc-400 font-bold uppercase tracking-[0.4em] font-outfit">Observing...</span>
-                </div>
+              {(status === "idle" || status === "loading") && status !== "done" && displayedCritiques.length === 0 && (
+                <button 
+                  onClick={handleCritique} 
+                  disabled={status === "loading"}
+                  className="w-full py-5 bg-zinc-900 text-white font-bold rounded-xl shadow-xl transition-all active:opacity-80 text-lg font-outfit disabled:opacity-50"
+                >
+                  {status === "loading" ? "Observing..." : "Analyze Piece"}
+                </button>
               )}
               {(status === "done" || displayedCritiques.length > 0) && (
                 <motion.div {...blurFade} className="space-y-8">
@@ -248,10 +242,12 @@ export default function Workspace() {
                   <div className="space-y-4">
                     {displayedCritiques.map((c, i) => (
                       <div key={i} className="p-4 border-b border-zinc-50 flex items-center justify-between group cursor-default">
-                        <div>
-                          <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest block mb-1 font-outfit">Point {i + 1}</span>
-                          <span className="text-xl font-bold text-zinc-800 tracking-tight font-serif">{c.title}</span>
-                        </div>
+                        {c && (
+                          <div>
+                            <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest block mb-1 font-outfit">Point {i + 1}</span>
+                            <span className="text-xl font-bold text-zinc-800 tracking-tight font-serif">{c.title}</span>
+                          </div>
+                        )}
                         <Search size={16} className="text-zinc-300 group-hover:text-red-500 transition-colors" />
                       </div>
                     ))}
@@ -332,6 +328,8 @@ export default function Workspace() {
 
 function RedlineMark({ dot, index }: { dot: Critique; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
+  if (!dot) return null;
+
   const isNearRight = dot.x > 70;
   const isNearLeft = dot.x < 30;
   const isNearTop = dot.y < 30;
