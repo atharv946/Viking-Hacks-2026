@@ -294,6 +294,27 @@ export default function Workspace() {
 function CritiqueDot({ dot, index }: { dot: any; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Dynamic positioning logic to prevent cutoff
+  const isNearRight = dot.x > 70;
+  const isNearLeft = dot.x < 30;
+  const isNearTop = dot.y < 30;
+
+  const xPositionClass = isNearRight 
+    ? "right-0" 
+    : isNearLeft 
+      ? "left-0" 
+      : "left-1/2 -translate-x-1/2";
+
+  const yPositionClass = isNearTop 
+    ? "top-10" 
+    : "bottom-10";
+
+  const originClass = isNearTop
+    ? (isNearRight ? "origin-top-right" : isNearLeft ? "origin-top-left" : "origin-top")
+    : (isNearRight ? "origin-bottom-right" : isNearLeft ? "origin-bottom-left" : "origin-bottom");
+
+  const initialY = isNearTop ? -15 : 15;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0 }}
@@ -313,25 +334,33 @@ function CritiqueDot({ dot, index }: { dot: any; index: number }) {
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            initial={{ opacity: 0, y: 15, scale: 0.9 }}
+            initial={{ opacity: 0, y: initialY, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-72 glass p-5 rounded-2xl z-40 shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
+            exit={{ opacity: 0, y: initialY, scale: 0.95 }}
+            className={`absolute ${xPositionClass} ${yPositionClass} ${originClass} w-72 glass p-[1px] rounded-2xl z-40 shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden`}
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-              <h4 className="text-base font-bold text-zinc-50">{dot.title}</h4>
-            </div>
-            <p className="text-sm text-zinc-300 leading-relaxed font-medium">
-              {dot.desc}
-            </p>
-            <div className="mt-4 flex gap-3">
-              <button className="flex-1 text-xs font-bold bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-2 rounded-lg text-white transition-all">
-                Fix with AI
-              </button>
-              <button className="flex-1 text-xs font-bold bg-transparent hover:bg-white/5 border border-transparent hover:border-white/10 px-3 py-2 rounded-lg text-zinc-400 transition-all">
-                Ignore
-              </button>
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 via-zinc-900/80 to-zinc-900/90 backdrop-blur-3xl" />
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),transparent)]" />
+            
+            {/* Connector line simulation */}
+            <div className={`absolute ${isNearTop ? '-top-2' : '-bottom-2'} ${isNearRight ? 'right-4' : isNearLeft ? 'left-4' : 'left-1/2 -translate-x-1/2'} w-[2px] h-4 bg-red-500/50 blur-[1px]`} />
+
+            <div className="relative p-5 z-10">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
+                <h4 className="text-base font-bold text-zinc-50 tracking-wide text-shiny">{dot.title}</h4>
+              </div>
+              <p className="text-sm text-zinc-300 leading-relaxed font-medium">
+                {dot.desc}
+              </p>
+              <div className="mt-5 flex gap-3">
+                <button className="flex-1 text-xs font-bold bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 px-3 py-2.5 rounded-xl text-red-100 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)] hover:shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                  Fix with AI
+                </button>
+                <button className="flex-1 text-xs font-bold bg-zinc-800/30 hover:bg-zinc-800/60 border border-white/5 hover:border-white/10 px-3 py-2.5 rounded-xl text-zinc-400 transition-all">
+                  Ignore
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
