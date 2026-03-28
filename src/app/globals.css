@@ -26,7 +26,6 @@
 
   .paper-canvas {
     @apply bg-white shadow-[0_10px_50px_rgba(0,0,0,0.05)] border border-zinc-100;
-    /* Rotation removed to fix light source coordinate drift */
   }
   
   .ink-stain {
@@ -56,22 +55,19 @@
     @apply outline-none ring-1 ring-zinc-300 border-zinc-400;
   }
 
-  /* Sophisticated gradient blur for the top bar */
   .top-blur-mask {
     mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
   }
 
-  /* Layers visualization effects */
-  .layer-silhouette {
-    filter: brightness(0) invert(1) contrast(100);
-    mix-blend-mode: multiply;
-    opacity: 0.1;
+  /* Real Layer Deconstruction Styles */
+  .layer-value-map {
+    filter: contrast(200%) grayscale(1);
+    mix-blend-mode: overlay;
   }
 
-  .layer-gesture {
-    filter: edge-detect(1) contrast(200) invert(1);
+  .layer-edge-detect {
+    filter: contrast(500%) invert(1) grayscale(1) brightness(0.8);
     mix-blend-mode: color-burn;
-    opacity: 0.2;
   }
 }

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Outfit } from "next/font/google";
+import { Newsreader, Outfit } from "next/font/google";
 import "./globals.css";
 
-const playfair = Playfair_Display({ 
+const newsreader = Newsreader({ 
   subsets: ["latin"], 
   style: ["normal", "italic"],
   display: "swap",
-  variable: "--font-playfair" 
+  variable: "--font-newsreader" 
 });
 
 const outfit = Outfit({ 
@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${outfit.variable} ${playfair.variable} antialiased overflow-hidden h-screen w-screen bg-[#fcfcfc] text-zinc-800`}>
+      <body className={`${outfit.variable} ${newsreader.variable} font-sans antialiased overflow-hidden h-screen w-screen bg-[#fcfcfc] text-zinc-800`}>
         {children}
       </body>
     </html>
