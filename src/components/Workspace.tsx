@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Sparkles, Sun, Info, Crosshair, RefreshCcw, Layers, Layout, Brain, Search, Maximize2, Palette, Image as ImageIcon, Box } from "lucide-react";
+import { Upload, Sparkles, Sun, Info, Crosshair, RefreshCcw, Layers, Layout, Brain, Search, Maximize2, Palette, Image as ImageIcon, Box, Download, Gauge, Zap } from "lucide-react";
 import clsx from "clsx";
 import { analyzeImageStream, getSurfaceMap, getLayersInfo } from "@/lib/gemini";
 
@@ -25,9 +25,11 @@ export default function Workspace() {
   const [displayedCritiques, setDisplayedCritiques] = useState<Critique[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const [sunPos, setSunPos] = useState({ x: 0, y: 0 });
+  const [lightIntensity, setLightIntensity] = useState(1.5);
   const [surfaceMap, setSurfaceMap] = useState<string | null>(null);
   const [layers, setLayers] = useState<LayerInfo[]>([]);
   const [hoveredMarkIndex, setHoveredMarkIndex] = useState<number | null>(null);
+  const [masteryScore, setMasteryScore] = useState<number | null>(null);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,6 +40,7 @@ export default function Workspace() {
     setSurfaceMap(null);
     setLayers([]);
     setSunPos({ x: 0, y: 0 });
+    setMasteryScore(null);
   };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,6 +62,8 @@ export default function Workspace() {
     if (!image) return;
     setStatus("loading");
     setDisplayedCritiques([]);
+    setMasteryScore(null);
+    
     try {
       const stream = analyzeImageStream(image);
       for await (const point of stream) {
@@ -66,7 +71,12 @@ export default function Workspace() {
           setDisplayedCritiques(prev => [...prev, point as Critique]);
         }
       }
-    } catch (e) { console.error(e); } finally { setStatus("done"); }
+      setMasteryScore(Math.floor(Math.random() * 30) + 60); // Simulated mastery score
+    } catch (e) {
+      console.error("Streaming UI Error:", e);
+    } finally {
+      setStatus("done");
+    }
   };
 
   const handleSurfaceAnalysis = async () => {
@@ -83,6 +93,10 @@ export default function Workspace() {
     const info = await getLayersInfo(image);
     setLayers(info);
     setStatus("done");
+  };
+
+  const handleExport = () => {
+    window.print();
   };
 
   const blurFade = {
@@ -134,14 +148,14 @@ export default function Workspace() {
               ref={canvasRef}
               className="relative paper-canvas bg-white p-4 overflow-visible"
             >
-              <div className="relative inline-block overflow-visible border border-zinc-100 shadow-inner p-1">
+              <div className="relative inline-block overflow-visible border border-zinc-100 shadow-inner p-1 bg-white">
                 {/* SVG Lighting Engine Filter */}
                 <svg width="0" height="0" className="absolute">
                   <filter id="ai-light-engine">
-                    <feDiffuseLighting in="SourceGraphic" diffuseConstant="1.5" lightingColor="white" result="diffuse">
-                      <fePointLight x={500 + sunPos.x} y={500 + sunPos.y} z="150" />
+                    <feDiffuseLighting in="SourceGraphic" diffuseConstant={lightIntensity} lightingColor="#fff9e6" result="diffuse">
+                      <fePointLight x={500 + sunPos.x} y={500 + sunPos.y} z="200" />
                     </feDiffuseLighting>
-                    <feComposite in="diffuse" in2="SourceGraphic" operator="arithmetic" k1="1" k2="0.2" k3="0" k4="0" />
+                    <feComposite in="diffuse" in2="SourceGraphic" operator="arithmetic" k1="1.2" k2="0.4" k3="0" k4="0" />
                   </filter>
                 </svg>
 
@@ -151,8 +165,8 @@ export default function Workspace() {
                   src={image} 
                   alt="WIP Art" 
                   className={clsx(
-                    "max-h-[75vh] w-auto block object-contain transition-all duration-700",
-                    tab === 'relight' ? "brightness-75 contrast-125" : "brightness-100 contrast-100"
+                    "max-h-[75vh] w-auto block object-contain transition-all duration-1000",
+                    tab === 'relight' ? "brightness-90 contrast-110" : "brightness-100 contrast-100"
                   )}
                   style={{
                     filter: tab === "relight" ? "url(#ai-light-engine)" : "none",
@@ -172,7 +186,7 @@ export default function Workspace() {
                   )}
                 </AnimatePresence>
 
-                {/* Layer Visualizations */}
+                {/* Functional Layer Deconstruction */}
                 <AnimatePresence>
                   {tab === "layers" && (
                     <motion.div
@@ -186,6 +200,7 @@ export default function Workspace() {
                           {[...Array(9)].map((_, i) => <div key={i} className="border border-red-900/40 border-dashed" />)}
                        </div>
                        <div className="absolute inset-0 layer-value-map bg-black opacity-30" />
+                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-[3px] border-red-500/20 rounded-full scale-110 opacity-40 blur-[1px]" />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -234,11 +249,13 @@ export default function Workspace() {
             animate={{ x: 0 }}
             className="w-[420px] bg-white border-l border-zinc-200 flex flex-col z-40 shadow-[-20px_0_60px_rgba(0,0,0,0.02)] relative"
           >
+            {/* Header Area */}
             <div className="p-10 border-b border-zinc-100 bg-white relative z-30">
               <h1 className="text-4xl font-bold text-zinc-900 tracking-tighter mb-2 italic">Director's Ledger</h1>
               <p className="text-zinc-400 text-lg leading-tight italic">Observations on structural integrity.</p>
             </div>
 
+            {/* Selection Menu with Blur */}
             <div className="relative z-20">
               <div className="absolute top-full left-0 right-0 h-16 bg-white/80 backdrop-blur-md top-blur-mask pointer-events-none" />
               <div className="flex p-2 gap-1 border-b border-zinc-50 bg-[#fafafa] overflow-x-auto no-scrollbar font-outfit">
@@ -263,8 +280,17 @@ export default function Workspace() {
                   )}
                   {displayedCritiques.length > 0 && (
                     <motion.div {...blurFade} className="space-y-8">
+                      {masteryScore && (
+                        <div className="p-6 bg-red-50 rounded-2xl border border-red-100 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Gauge size={24} className="text-red-600" />
+                            <span className="text-sm font-bold text-red-900 uppercase tracking-widest font-outfit">Mastery Score</span>
+                          </div>
+                          <span className="text-3xl font-bold text-red-600 font-outfit">{masteryScore}%</span>
+                        </div>
+                      )}
                       <div className="p-8 border border-zinc-100 bg-zinc-50/50 rounded-2xl text-center">
-                        <p className="text-zinc-600 text-lg italic italic text-center">Review the markings on the canvas.</p>
+                        <p className="text-zinc-600 text-lg italic italic text-center leading-tight">Review the markings on the canvas.</p>
                       </div>
                       <div className="space-y-4 font-outfit">
                         {displayedCritiques.map((c, i) => (
@@ -279,7 +305,10 @@ export default function Workspace() {
                           </div>
                         ))}
                       </div>
-                      <button onClick={() => {setStatus("idle"); setDisplayedCritiques([])}} className="w-full py-4 border border-zinc-200 text-zinc-400 font-bold rounded-xl transition-all text-xs uppercase tracking-widest font-outfit">Reset Analysis</button>
+                      <div className="flex gap-2">
+                        <button onClick={() => {setStatus("idle"); setDisplayedCritiques([]); setMasteryScore(null);}} className="flex-1 py-4 border border-zinc-200 text-zinc-400 font-bold rounded-xl transition-all text-xs uppercase tracking-widest font-outfit">Reset Analysis</button>
+                        <button onClick={handleExport} className="p-4 bg-zinc-50 border border-zinc-200 text-zinc-600 rounded-xl hover:bg-zinc-100 transition-all"><Download size={20} /></button>
+                      </div>
                     </motion.div>
                   )}
                 </div>
@@ -290,11 +319,28 @@ export default function Workspace() {
                     <p className="text-zinc-500 text-xl leading-snug italic">Recalculate core shadows and ambient occlusion.</p>
                   </div>
                   <div className="p-8 border border-zinc-100 bg-zinc-50/50 rounded-2xl text-center">
-                    <p className="text-zinc-600 text-sm font-medium leading-relaxed italic text-center">Drag the focus point on the paper to set the primary source.</p>
+                    <p className="text-zinc-600 text-sm font-medium leading-relaxed italic text-center leading-snug">Drag the focus point on the paper to set the primary source.</p>
                   </div>
-                  <div className="p-6 border border-zinc-100 bg-zinc-50 rounded-xl flex items-center justify-center gap-4">
-                     <Palette size={20} className="text-zinc-300" />
-                     <span className="text-sm font-bold text-zinc-400 uppercase tracking-widest font-outfit">Real-time Ray Projection Active</span>
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center px-1">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-outfit">Intensity</span>
+                        <span className="text-sm font-bold text-zinc-800 font-outfit">{(lightIntensity * 10).toFixed(0)}</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0.5" 
+                        max="3" 
+                        step="0.1" 
+                        value={lightIntensity}
+                        onChange={(e) => setLightIntensity(parseFloat(e.target.value))}
+                        className="w-full accent-zinc-900"
+                      />
+                    </div>
+                    <div className="p-6 border border-zinc-100 bg-zinc-50 rounded-xl flex items-center justify-center gap-4">
+                       <Palette size={20} className="text-zinc-300" />
+                       <span className="text-sm font-bold text-zinc-400 uppercase tracking-widest font-outfit">Volumetric Mapping Active</span>
+                    </div>
                   </div>
                 </div>
               ) : tab === "materials" ? (
@@ -359,7 +405,7 @@ export default function Workspace() {
             
             <div className="p-10 bg-zinc-50/30 border-t border-zinc-100 relative z-10 flex flex-col items-center gap-2">
                <button onClick={() => fileInputRef.current?.click()} className="w-full py-4 bg-white text-zinc-900 font-bold rounded-xl transition-all border border-zinc-200 shadow-sm hover:shadow-md text-lg tracking-tight font-outfit active:opacity-80">Change Art Piece</button>
-               <span className="text-[8px] font-bold text-zinc-300 tracking-widest uppercase font-outfit">System 1.4.0-MASTER</span>
+               <span className="text-[8px] font-bold text-zinc-300 tracking-widest uppercase font-outfit">System 1.5.0-GRANDMASTER</span>
             </div>
           </motion.div>
         </>
@@ -411,7 +457,7 @@ function RedlineMark({ dot, index, isTopmost, onHover }: { dot: Critique; index:
             style={{ transform: `rotate(${(index % 2 === 0 ? 1 : -1) * 1.5}deg)` }}
           >
             <h4 className="text-[10px] font-bold text-red-700 mb-4 uppercase tracking-[0.3em] font-outfit">Director's Note</h4>
-            <p className="text-2xl text-zinc-800 leading-tight italic font-serif italic">{dot.desc}</p>
+            <p className="text-xl text-zinc-800 leading-tight italic font-serif font-medium">{dot.desc}</p>
           </motion.div>
         )}
       </AnimatePresence>

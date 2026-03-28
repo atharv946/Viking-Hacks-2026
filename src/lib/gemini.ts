@@ -35,7 +35,6 @@ export async function* analyzeImageStream(imageRef: string) {
     let lastFoundIndex = 0;
     for await (const chunk of result.stream) {
       fullText += chunk.text();
-      // Look for individual objects { ... }
       const regex = /\{[^{}]*}/g;
       const matches = fullText.match(regex);
       if (matches) {
@@ -69,9 +68,10 @@ export async function getSurfaceMap(imageRef: string): Promise<string | null> {
   try {
     const response = await fetch(imageRef);
     const blob = await response.blob();
+    // Fix: Using the correct 'inputs' property for Hugging Face imageToImage
     const depthBlob = await hf.imageToImage({
       model: "Intel/dpt-large",
-      data: blob,
+      inputs: blob,
     });
     return URL.createObjectURL(depthBlob);
   } catch (error) {
@@ -84,9 +84,10 @@ export async function getLayersInfo(imageRef: string) {
   try {
     const response = await fetch(imageRef);
     const blob = await response.blob();
+    // Fix: Using the correct 'inputs' property for Hugging Face objectDetection
     const results = await hf.objectDetection({
       model: "facebook/detr-resnet-50",
-      data: blob,
+      inputs: blob,
     });
     return results.map(r => ({
       name: r.label,
