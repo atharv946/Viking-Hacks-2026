@@ -1378,7 +1378,7 @@ export default function Workspace() {
                           <button onClick={handleFullAudit} disabled={isAuditing} className={paperPrimaryButton}>
                             {isAuditing ? "Running Full Audit" : "Run Full Audit"}
                           </button>
-                          <div className="border-t border-[#e2d2c3] pt-4">
+                          <div className="mt-3">
                             <button
                               onClick={() => setIsPlanOpen((prev) => !prev)}
                               className="flex w-full items-center justify-between gap-3 text-left"
@@ -2348,15 +2348,14 @@ const RedlineMark = memo(function RedlineMark({ dot, index, forceHover }: { dot:
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: initialY * 1.8, scale: 0.88 }}
             transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-            className={clsx(
-              "pointer-events-none absolute w-64 overflow-hidden rounded-[24px] border border-[#e0cdbd] bg-[linear-gradient(180deg,rgba(255,250,242,0.98),rgba(248,236,221,0.96))] p-5 shadow-[0_28px_60px_rgba(87,66,55,0.18)]",
-              xPositionClass,
-              yPositionClass,
-            )}
+            className={clsx("pointer-events-none absolute w-64", xPositionClass, yPositionClass)}
           >
-            <div style={{ transform: `rotate(${(index % 2 === 0 ? 1 : -1) * 1.1}deg)` }}>
-              <h4 className="mb-2 text-[9px] font-bold uppercase tracking-[0.26em] text-[#a53e25] font-outfit">Director&apos;s Note</h4>
-              <p className="text-sm leading-snug text-[#2b211d] italic font-serif">{dot.desc}</p>
+            <div className="pointer-events-none absolute inset-[-7px] rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,234,222,0.9),rgba(255,234,222,0.34)_48%,rgba(255,234,222,0)_76%)] opacity-65 blur-md" />
+            <div className="relative overflow-hidden rounded-[24px] border border-[#e0cdbd] bg-[linear-gradient(180deg,rgba(255,250,242,0.98),rgba(248,236,221,0.96))] p-5 shadow-[0_28px_60px_rgba(87,66,55,0.18)]">
+              <div style={{ transform: `rotate(${(index % 2 === 0 ? 1 : -1) * 1.1}deg)` }}>
+                <h4 className="mb-2 text-[9px] font-bold uppercase tracking-[0.26em] text-[#a53e25] font-outfit">Director&apos;s Note</h4>
+                <p className="text-sm leading-snug text-[#2b211d] italic font-serif">{dot.desc}</p>
+              </div>
             </div>
           </motion.div>
         )}
