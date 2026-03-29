@@ -637,10 +637,10 @@ export default function Workspace() {
   }, [isSelectingRegion, regionDraft, selectedRegion]);
 
   useEffect(() => {
-    if (tab !== "critique") {
+    if (tab !== "critique" || isSelectingRegion || regionDraft) {
       setHoveredMarkIndex(null);
     }
-  }, [tab]);
+  }, [isSelectingRegion, regionDraft, tab]);
 
   useEffect(() => {
     const handleStudioShortcuts = (event: KeyboardEvent) => {
@@ -1013,6 +1013,7 @@ export default function Workspace() {
   };
 
   const displayedImage = tab === "relight" && relitImage ? relitImage : image;
+  const isFocusSelectionActive = isSelectingRegion || regionDraft !== null;
   const focusRegionLabel = selectedRegion ? "Clear Focus" : isSelectingRegion || regionDraft ? "Cancel Focus" : "Focus";
   const moodTags = getMoodTags(studioAnalysis);
   const visionScore = getVisionScore(masteryScore, studioAnalysis);
@@ -1377,7 +1378,7 @@ export default function Workspace() {
                           <button onClick={handleFullAudit} disabled={isAuditing} className={paperPrimaryButton}>
                             {isAuditing ? "Running Full Audit" : "Run Full Audit"}
                           </button>
-                          <div className="mt-4 border-t border-[#e2d2c3] pt-4">
+                          <div className="border-t border-[#e2d2c3] pt-4">
                             <button
                               onClick={() => setIsPlanOpen((prev) => !prev)}
                               className="flex w-full items-center justify-between gap-3 text-left"
@@ -2026,7 +2027,7 @@ export default function Workspace() {
                     </div>
 
                     <AnimatePresence>
-                      {tab === "layers" && toolStatus.layers === "done" && layerOverlay && (
+                      {!isFocusSelectionActive && tab === "layers" && toolStatus.layers === "done" && layerOverlay && (
                         <motion.div
                           initial={{ opacity: 0, filter: "blur(16px)" }}
                           animate={{ opacity: 0.84, filter: "blur(0px)" }}
@@ -2043,7 +2044,7 @@ export default function Workspace() {
                     </AnimatePresence>
 
                     <AnimatePresence>
-                      {tab === "framing" && studioAnalysis && toolStatus.framing === "done" && (
+                      {!isFocusSelectionActive && tab === "framing" && studioAnalysis && toolStatus.framing === "done" && (
                         <motion.div
                           initial={{ opacity: 0, filter: "blur(16px)" }}
                           animate={{ opacity: 1, filter: "blur(0px)" }}
@@ -2067,7 +2068,7 @@ export default function Workspace() {
                     </AnimatePresence>
 
                     <AnimatePresence>
-                      {tab === "palette" && studioAnalysis && toolStatus.palette === "done" && (
+                      {!isFocusSelectionActive && tab === "palette" && studioAnalysis && toolStatus.palette === "done" && (
                         <motion.div
                           initial={{ opacity: 0, y: 18 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -2087,7 +2088,7 @@ export default function Workspace() {
                     </AnimatePresence>
 
                     <AnimatePresence>
-                      {tab === "readability" && readabilityAnalysis && toolStatus.readability === "done" && (
+                      {!isFocusSelectionActive && tab === "readability" && readabilityAnalysis && toolStatus.readability === "done" && (
                         <>
                           <motion.div
                             initial={{ opacity: 0, filter: "blur(16px)" }}
@@ -2122,7 +2123,8 @@ export default function Workspace() {
 
                     <div className="pointer-events-none absolute inset-2 overflow-visible rounded-[14px]">
                       <AnimatePresence>
-                        {tab === "critique" &&
+                        {!isFocusSelectionActive &&
+                          tab === "critique" &&
                           displayedCritiques.map((dot, index) => (
                             <RedlineMark
                               key={`${image}-${index}`}
@@ -2136,7 +2138,7 @@ export default function Workspace() {
                   </div>
 
                   <AnimatePresence>
-                    {tab === "relight" && isRelit && (
+                    {!isFocusSelectionActive && tab === "relight" && isRelit && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.7, filter: "blur(10px)" }}
                         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
@@ -2342,12 +2344,12 @@ const RedlineMark = memo(function RedlineMark({ dot, index, forceHover }: { dot:
       <AnimatePresence mode="popLayout" initial={false}>
         {isHovered && (
           <motion.div
-            initial={{ opacity: 0, y: initialY * 1.8, filter: "blur(18px)", scale: 0.84 }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)", scale: 1 }}
-            exit={{ opacity: 0, y: initialY * 1.8, filter: "blur(18px)", scale: 0.88 }}
+            initial={{ opacity: 0, y: initialY * 1.8, scale: 0.84 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: initialY * 1.8, scale: 0.88 }}
             transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
             className={clsx(
-              "pointer-events-none absolute w-64 rounded-[24px] border border-[#e0cdbd] bg-[linear-gradient(180deg,rgba(255,250,242,0.98),rgba(248,236,221,0.96))] p-5 shadow-[0_28px_60px_rgba(87,66,55,0.18)]",
+              "pointer-events-none absolute w-64 overflow-hidden rounded-[24px] border border-[#e0cdbd] bg-[linear-gradient(180deg,rgba(255,250,242,0.98),rgba(248,236,221,0.96))] p-5 shadow-[0_28px_60px_rgba(87,66,55,0.18)]",
               xPositionClass,
               yPositionClass,
             )}
